@@ -306,12 +306,19 @@
 
 
 <script lang="ts">
-import { response } from 'express'
 import Vue from 'vue'
 
 export default Vue.extend({
   name: 'IndexPage',
-
+  beforeCreate () {
+    if (process.browser) {
+      if(!localStorage.getItem('token')) {
+        this.$router.push({
+          path: '/login'
+        })
+      }
+    }
+  },
   data () {
     return {
       dialog: false,
