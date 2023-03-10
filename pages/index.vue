@@ -108,7 +108,7 @@
                             <v-text-field
                               v-model="editedCategory.name"
                               label="Nombre"
-                              :rules="[(v: any) => !!v || 'Campo obligatorio.']"
+                              :rules="[v => !!v || 'Campo obligatorio.']"
                             ></v-text-field>
                           </v-col>
                         
@@ -364,7 +364,7 @@
                           <v-text-field
                             v-model="editedProduct.title"
                             label="Nombre"
-                            :rules="[(v: any) => !!v || 'El título es obligatorio']"
+                            :rules="[v => !!v || 'El título es obligatorio']"
                           ></v-text-field>
                         </v-col>
                         <v-col
@@ -375,7 +375,7 @@
                           <v-textarea
                             v-model="editedProduct.description"
                             label="Descripción"
-                            :rules="[(v: any) => !!v || 'La descripción es obligatoria']"
+                            :rules="[v => !!v || 'La descripción es obligatoria']"
                           ></v-textarea>
                         </v-col>
                         <v-col
@@ -403,7 +403,7 @@
                             item-text="name"
                             item-value="id"
                             label="Categoría"
-                            :rules="[(v: any) => !!v || 'Seleccione una catgoría']"
+                            :rules="[v => !!v || 'Seleccione una catgoría']"
 
                           ></v-select>
                         </v-col>
@@ -416,7 +416,7 @@
                             v-model="editedProduct.price"
                             label="Precio"
                             type="number"
-                            :rules="[(v: any) => !!v || 'El precio es obligatorio']"
+                            :rules="[v => !!v || 'El precio es obligatorio']"
                           ></v-text-field>
                         </v-col>
                     
@@ -617,9 +617,9 @@ export default Vue.extend({
     filteredProducts() {
       // no es el método más óptimo...
 
-      const titleFiltered = this.productsFilters.title == '' ? this.products : this.products.filter((product) => product.title.toLowerCase().includes(this.productsFilters.title.toLowerCase()));
-      const descriptionFiltered = this.productsFilters.description == '' ? titleFiltered : titleFiltered.filter((product) => product.description.toLowerCase().includes(this.productsFilters.description.toLowerCase()));
-      const priceFiltered = this.productsFilters.price == '' ? descriptionFiltered : descriptionFiltered.filter((product) => product.price == this.productsFilters.price.toLowerCase());
+      const titleFiltered = this.productsFilters.title == '' ? this.products : this.products.filter((product: any) => product.title.toLowerCase().includes(this.productsFilters.title.toLowerCase()));
+      const descriptionFiltered = this.productsFilters.description == '' ? titleFiltered : titleFiltered.filter((product: any) => product.description.toLowerCase().includes(this.productsFilters.description.toLowerCase()));
+      const priceFiltered = this.productsFilters.price == '' ? descriptionFiltered : descriptionFiltered.filter((product: any) => product.price == this.productsFilters.price.toLowerCase());
       
       return priceFiltered
         
