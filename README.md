@@ -10,5 +10,5 @@ $ npm install
 $ npm run dev
 
 # usuario para loguearse: email: "john@mail.com" || password: "changeme"
-# aviso: no está permitido manejar imágenes porque endpoint de /file de la API devuelve error 500
+# aviso: no está permitido manejar imágenes porque el endpoint de /file de la API devuelve error 500
 ```
