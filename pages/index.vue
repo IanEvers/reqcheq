@@ -1,16 +1,55 @@
 <template>
   <v-app>
 
+    <header class="bg-gray-300 ">
+      <div class="flex justify-between m-auto items-center p-5">
+        <div>
+          <span class="font-bold text-lg">{{ user.name }}</span>
+          <span class="italic px-3">{{ user.role }}</span>
+        </div>
+        <img :src="user.avatar" alt="" class="w-12 h-12 rounded-full object-cover">
+      </div>  
+    </header>
+
     <div class="bg-gray-200 min-h-screen">
       <div class=" max-w-7xl px-12 m-auto pt-12">
         <h1 class="text-3xl xl:text-5xl font-bold inter">Back Office</h1>
     
         <v-data-table
           :headers="categoryHeaders"
-          :items="categories"
+          :items="filteredCategories"
           :items-per-page="5"
           class="elevation-1 mb-24 mt-12"          
         >
+          <template v-slot:header.name="{ header }">
+            {{ header.text }}
+            <v-menu offset-y :close-on-content-click="false">
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn icon v-bind="attrs" v-on="on">
+                  <v-icon small :color="categoryNameFilter ? 'primary' : ''">
+                    mdi-filter
+                  </v-icon>
+                </v-btn>
+              </template>
+              <div style="background-color: white; width: 280px">
+                <v-text-field
+                  v-model="categoryNameFilter"
+                  class="pa-4"
+                  type="text"
+                  label="Buscar por Nombre"
+                  :autofocus="true"
+                ></v-text-field>
+                <v-btn
+                  @click="categoryNameFilter = ''"
+                  small
+                  text
+                  color="primary"
+                  class="ml-2 mb-2"
+                >limpiar</v-btn>
+              </div>
+            </v-menu>
+          </template>
+          
           <template v-slot:top>
             <v-toolbar
               flat
@@ -40,19 +79,41 @@
 
                   <v-card-text>
                     <v-container>
-                      <v-row>
-                        <v-col
-                          cols="12"
-                          sm="6"
-                          md="4"
-                        >
-                          <v-text-field
-                            v-model="editedCategory.name"
-                            label="Nombre"
-                          ></v-text-field>
-                        </v-col>
-                      
-                      </v-row>
+                      <v-form
+                        ref="formCategory"
+                        v-model="validCategoryForm"
+                        lazy-validation
+                      >
+                        <v-row>
+                          <v-col
+                            cols="12"
+                            sm="6"
+                            md="4"
+                          >
+                            <v-file-input
+                              truncate-length="25"
+                              
+                              accept="image/*"
+                              disabled
+                              label="(no disponible)"
+                              @change="() => handleFileUploadCategory(editedCategory.image)"
+                            >
+                            </v-file-input>
+                          </v-col>
+                          <v-col
+                            cols="12"
+                            sm="6"
+                            md="4"
+                          >
+                            <v-text-field
+                              v-model="editedCategory.name"
+                              label="Nombre"
+                              :rules="[v => !!v || 'Campo obligatorio.']"
+                            ></v-text-field>
+                          </v-col>
+                        
+                        </v-row>
+                      </v-form>
                     </v-container>
                   </v-card-text>
 
@@ -125,7 +186,7 @@
               
                 thumb-label="always"
                 max="1000"
-                min="0"
+                min="1"
                 v-model="priceFilter"
                 class="mt-6 px-2"
               >
@@ -170,10 +231,96 @@
 
         <v-data-table
           :headers="headers"
-          :items="products"
+          :items="filteredProducts"
           :items-per-page="5"
+          :loading="productTableLoading"
           class="elevation-1 mb-24"          
         >
+          <template v-slot:header.title="{ header }">
+            {{ header.text }}
+            <v-menu offset-y :close-on-content-click="false">
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn icon v-bind="attrs" v-on="on">
+                  <v-icon small :color="productsFilters.title ? 'primary' : ''">
+                    mdi-filter
+                  </v-icon>
+                </v-btn>
+              </template>
+              <div style="background-color: white; width: 280px">
+                <v-text-field
+                  v-model="productsFilters.title"
+                  class="pa-4"
+                  type="text"
+                  label="Buscar por Nombre"
+                  :autofocus="true"
+                ></v-text-field>
+                <v-btn
+                  @click="productsFilters.title = ''"
+                  small
+                  text
+                  color="primary"
+                  class="ml-2 mb-2"
+                >limpiar</v-btn>
+              </div>
+            </v-menu>
+          </template>
+          <template v-slot:header.description="{ header }">
+            {{ header.text }}
+            <v-menu offset-y :close-on-content-click="false">
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn icon v-bind="attrs" v-on="on">
+                  <v-icon small :color="productsFilters.description ? 'primary' : ''">
+                    mdi-filter
+                  </v-icon>
+                </v-btn>
+              </template>
+              <div style="background-color: white; width: 280px">
+                <v-text-field
+                  v-model="productsFilters.description"
+                  class="pa-4"
+                  type="text"
+                  label="Buscar por Descripción"
+                  :autofocus="true"
+                ></v-text-field>
+                <v-btn
+                  @click="productsFilters.description = ''"
+                  small
+                  text
+                  color="primary"
+                  class="ml-2 mb-2"
+                >limpiar</v-btn>
+              </div>
+            </v-menu>
+          </template>
+       
+          <template v-slot:header.price="{ header }">
+            {{ header.text }}
+            <v-menu offset-y :close-on-content-click="false">
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn icon v-bind="attrs" v-on="on">
+                  <v-icon small :color="productsFilters.price ? 'primary' : ''">
+                    mdi-filter
+                  </v-icon>
+                </v-btn>
+              </template>
+              <div style="background-color: white; width: 280px">
+                <v-text-field
+                  v-model="productsFilters.price"
+                  class="pa-4"
+                  type="text"
+                  label="Buscar por Precio"
+                  :autofocus="true"
+                ></v-text-field>
+                <v-btn
+                  @click="productsFilters.price = ''"
+                  small
+                  text
+                  color="primary"
+                  class="ml-2 mb-2"
+                >limpiar</v-btn>
+              </div>
+            </v-menu>
+          </template>
         <template v-slot:top>
           <v-toolbar
             flat
@@ -202,42 +349,80 @@
                 </v-card-title>
 
                 <v-card-text>
-                  <v-container>
-                    <v-row>
-                      <v-col
-                        cols="12"
-                        sm="6"
-                        md="4"
-                      >
-                        <v-text-field
-                          v-model="editedProduct.title"
-                          label="Nombre"
-                        ></v-text-field>
-                      </v-col>
-                      <v-col
-                        cols="12"
-                        sm="6"
-                        md="4"
-                      >
-                        <v-textarea
-                          v-model="editedProduct.description"
-                          label="Descripción"
-                        ></v-textarea>
-                      </v-col>
+                  <v-form
+                    ref="formProducts"
+                    v-model="validProductsForm"
+                    lazy-validation
+                  >
+                    <v-container>
+                      <v-row>
+                        <v-col
+                          cols="12"
+                          sm="6"
+                          md="4"
+                        >
+                          <v-text-field
+                            v-model="editedProduct.title"
+                            label="Nombre"
+                            :rules="[v => !!v || 'El título es obligatorio']"
+                          ></v-text-field>
+                        </v-col>
+                        <v-col
+                          cols="20"
+                          sm="10"
+                          md="10"
+                        >
+                          <v-textarea
+                            v-model="editedProduct.description"
+                            label="Descripción"
+                            :rules="[v => !!v || 'La descripción es obligatoria']"
+                          ></v-textarea>
+                        </v-col>
+                        <v-col
+                          cols="12"
+                          sm="6"
+                          md="4"
+                        >
+                          <v-file-input
+                            truncate-length="25"
+                            accept="image/*"
+                            disabled
+                            label="(no disponible)"
+                          >
+                          </v-file-input>
+                        </v-col>
+                        <v-col
+                          v-if="editedIndex == -1"
+                          cols="12"
+                          sm="6"
+                          md="4"
+                        >
+                          <v-select
+                            v-model="editedProduct.category.id"
+                            :items="categories"
+                            item-text="name"
+                            item-value="id"
+                            label="Categoría"
+                            :rules="[v => !!v || 'Seleccione una catgoría']"
 
-                      <v-col
-                        cols="12"
-                        sm="6"
-                        md="4"
-                      >
-                        <v-text-field
-                          v-model="editedProduct.price"
-                          label="Precio"
-                        ></v-text-field>
-                      </v-col>
-                     
-                    </v-row>
-                  </v-container>
+                          ></v-select>
+                        </v-col>
+                        <v-col
+                          cols="12"
+                          sm="6"
+                          md="4"
+                        >
+                          <v-text-field
+                            v-model="editedProduct.price"
+                            label="Precio"
+                            type="number"
+                            :rules="[v => !!v || 'El precio es obligatorio']"
+                          ></v-text-field>
+                        </v-col>
+                    
+                      </v-row>
+                    </v-container>
+                  </v-form>
                 </v-card-text>
 
                 <v-card-actions>
@@ -310,24 +495,48 @@ import Vue from 'vue'
 
 export default Vue.extend({
   name: 'IndexPage',
-  beforeCreate () {
-    if (process.browser) {
-      if(!localStorage.getItem('token')) {
-        this.$router.push({
-          path: '/login'
-        })
+  async middleware(context) {
+    // If the user is not authenticated
+ 
+
+    const response = await fetch("https://api.escuelajs.co/api/v1/auth/profile", 
+      {
+        headers: {
+          "Authorization": "Bearer " + localStorage.getItem('token')
+        }
       }
+    ).then((response) => response.json())
+
+    if (response.statusCode == 401) {
+      return context.redirect('/login')
+    } else {
+      context.store.state.user = response
     }
   },
   data () {
     return {
+      user: {},
+
       dialog: false,
       dialogDelete: false,
       categoryDialog: false,
       categoryDialogDelete: false,
+
+      fileCategory: null,
+      validCategoryForm: true,
+      validProductsForm: true,
+
+      categoryNameFilter: '',
+
+      productsFilters: {
+        title: '',
+        description: '',
+        category: '',
+        price: '',
+      },
       
       titleFilter: '',
-      priceFilter: [0, 5000],
+      priceFilter: [1, 5000],
       select: '',
 
       headers: [
@@ -340,11 +549,12 @@ export default Vue.extend({
         { text: 'Imagenes', value: 'imagen' },
         { text: 'Nombre', value: 'title' },
         { text: 'Descripción', value: 'description' },
-        { text: 'categoría', value: 'category.name' },
+        { text: 'Categoría', value: 'category.name' },
         { text: 'Precio', value: 'price' },
         { text: 'Acciones', value: 'actions', sortable: false },
       ],
       products: [{}],
+      productTableLoading: false,
       categoryHeaders: [
         {
           text: 'id',
@@ -377,12 +587,12 @@ export default Vue.extend({
 
       editedCategory: {
         id: 0,
-        images: '',
+        image: null,
         name: '',
       },
       defaultCategory: {
         id: 0,
-        images: '',
+        image: null,
         name: '',
       },
       errorDeleteCategory: false
@@ -396,6 +606,26 @@ export default Vue.extend({
     formTitleCategory() {
       return this.editedIndex === -1 ? 'Nueva Categoría' : 'Editar Categoría'
     },
+
+    filteredCategories() {
+      if(this.categoryNameFilter == '') return this.categories
+
+      return this.categories.filter((category) => {
+        console.log(category.name.toLowerCase(), this.categoryNameFilter.toLowerCase())
+        return category.name.toLowerCase().includes(this.categoryNameFilter.toLowerCase());
+      })
+        
+    },
+    filteredProducts() {
+      // no es el método más óptimo...
+
+      const titleFiltered = this.productsFilters.title == '' ? this.products : this.products.filter((product) => product.title.toLowerCase().includes(this.productsFilters.title.toLowerCase()));
+      const descriptionFiltered = this.productsFilters.description == '' ? titleFiltered : titleFiltered.filter((product) => product.description.toLowerCase().includes(this.productsFilters.description.toLowerCase()));
+      const priceFiltered = this.productsFilters.price == '' ? descriptionFiltered : descriptionFiltered.filter((product) => product.price == this.productsFilters.price.toLowerCase());
+      
+      return priceFiltered
+        
+    }
   },
 
   watch: {
@@ -409,6 +639,7 @@ export default Vue.extend({
 
   methods: {
     async filterProducts() {
+      this.productTableLoading = true
       let url = new URL('https://api.escuelajs.co/api/v1/products');
 
       url.searchParams.set('title', this.titleFilter);
@@ -417,6 +648,8 @@ export default Vue.extend({
       url.searchParams.set('price_max', String(this.priceFilter[1]));
       
       const response = await fetch(url).then((response) => response.json())
+      this.productTableLoading = false
+
       this.products = response
     },
 
@@ -446,6 +679,30 @@ export default Vue.extend({
       this.categoryDialogDelete = true
     },
 
+    async handleFileUploadCategory(file: any) {
+      // este código no va a ser usado porque la API de Platzi devuelve error 500 en este método
+      if(file) {
+
+        const reader = new FileReader();
+        
+        reader.readAsArrayBuffer(file);
+        reader.onload = async () => {
+          const binary = reader.result;
+          
+          // const response = await fetch("https://api.escuelajs.co/api/v1/files/upload",
+          //   {
+          //     method: 'POST',
+          //     body: {
+          //       file: binary
+          //     }
+          //   }
+          // ).then((response) => response.json())
+
+          // this.editedCategory.image = response.location
+        }
+      }
+    },
+
     async deleteItemConfirm() {
       let url = new URL('https://api.escuelajs.co/api/v1/products/'+this.editedProduct.id);
       
@@ -471,9 +728,17 @@ export default Vue.extend({
     },
 
     async save () {
+
+      if((this.$refs.formProducts as Vue & { validate: () => boolean }).validate() == false) {
+        return
+      }
+
       const imagen = "https://api.lorem.space/image/fashion?w=640&h=480&r=7910"
-      if (this.editedIndex > -1) {
-        const newProduct = {...this.editedProduct, category: {name: this.categories.find((category: any) => category.id == this.editedProduct.category)?.name, id: this.editedProduct.category}}
+      let edit = false
+      if(this.editedIndex > -1) edit = true
+
+      if (edit) {
+        const newProduct = this.editedProduct
         Object.assign(this.products[this.editedIndex], newProduct)
         await fetch('https://api.escuelajs.co/api/v1/products/'+ newProduct.id, {
           method: 'PUT',
@@ -483,7 +748,7 @@ export default Vue.extend({
           body: JSON.stringify(this.editedProduct)
         }).then((response) => response.json())
       } else {
-        const newProduct = {...this.editedProduct, categoryId: 1, images: [imagen, imagen, imagen]}
+        const newProduct = {...this.editedProduct, categoryId: this.editedProduct.category.id, images: [imagen, imagen, imagen]}
         const product = await fetch('https://api.escuelajs.co/api/v1/products', {
           method: 'POST',
           headers: {
@@ -527,6 +792,11 @@ export default Vue.extend({
     },
 
     async saveCategory () {
+
+      if((this.$refs.formCategory as Vue & { validate: () => boolean }).validate() == false) {
+        return
+      }
+
       const imagen = "https://api.lorem.space/image/fashion?w=640&h=480&r=7910"
 
       if (this.editedIndex > -1) {
@@ -554,10 +824,11 @@ export default Vue.extend({
     },
   },
 
-  async asyncData({ $http }) {
+  async asyncData({ $http, store }) {
     const products = await $http.$get('https://api.escuelajs.co/api/v1/products')
     const categories = await $http.$get('https://api.escuelajs.co/api/v1/categories')
-    return { products, categories }
+    const user = store.state.user
+    return { products, categories, user }
   }
 })
 </script>
