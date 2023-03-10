@@ -497,14 +497,12 @@ export default Vue.extend({
   name: 'IndexPage',
   async middleware(context) {
     // If the user is not authenticated
- 
-
     const response = await fetch("https://api.escuelajs.co/api/v1/auth/profile", 
-      {
-        headers: {
-          "Authorization": "Bearer " + localStorage.getItem('token')
-        }
+    {
+      headers: {
+        "Authorization": "Bearer " + localStorage.getItem('token')
       }
+    }
     ).then((response) => response.json())
 
     if (response.statusCode == 401) {
